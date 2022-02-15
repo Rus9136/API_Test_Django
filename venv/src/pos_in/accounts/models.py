@@ -1,6 +1,40 @@
 from django.db import models
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db.models import (EmailField, CharField, BooleanField, DateTimeField)
+from django.contrib.auth.hashers import make_password, identify_hasher
+
+
+class UserManager(BaseUserManager):
+    use_in_migrations = True
+
+    def create_user(self, email, password=None, name=None, full_name=None,
+                    is_active=True, is_staff=None, is_admin=None):
+        """
+        Create and save a user with the given username, email, and password.
+        """
+        if not email:
+            raise ValueError('Пользователь должен иметь и-мэйл адрес')
+        if not password:
+            raise ValueError('Пользователь должен ввести пароль')
+        email = self.normalize_email(email)
+        user = self.model(email=email, name=name)
+        user.set_password(password)
+        user.staff = is_staff
+        user.admin = is_admin
+        user.is_active = is_active
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, name=None):
+        user = self.create_user(email, name=name, password=password,
+                                is_staff=True, is_admin=True)
+        return user
+
+    def create_staffuser(self, email, password=None, name=None):
+        user = self.create_user(email, name=name, password=password,
+                                is_staff=True, is_admin=False)
+        return user
+
 
 class User(AbstractBaseUser):
     email = EmailField(unique=True, max_length=255)
@@ -11,5 +45,10 @@ class User(AbstractBaseUser):
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
+
+    objects = UserManager()
+
+
+
 
 
