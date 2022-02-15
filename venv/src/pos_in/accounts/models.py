@@ -38,8 +38,10 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser):
     email = EmailField(unique=True, max_length=255)
+    name = CharField(max_length=255, blank=True, null=True)
     full_name = CharField(max_length=255, blank=True, null=True)
-    is_staff = BooleanField(default=False)
+    staff = BooleanField(default=False)
+    is_active = BooleanField(default=True)
     admin = BooleanField(default=False)
     timestamp = DateTimeField(auto_now_add=True)
 
@@ -47,6 +49,48 @@ class User(AbstractBaseUser):
     REQUIRED_FIELDS = []
 
     objects = UserManager()
+
+    def __str__(self):
+        return self.email
+
+    def get_short_name(self):
+        if self.name:
+            return self.name
+        return self.email
+
+    def get_full_name(self):
+        if self.full_name:
+            return self.full_name
+        return self.email
+
+    def has_perm(self, perm, obj=None):
+        return True
+
+    def has_module_perms(self, app_label):
+        return True
+
+    @property
+    def is_staff(self):
+        if self.admin:
+            return True
+        return self.staff
+
+    @property
+    def is_admin(self):
+        return self.admin
+
+    def save(self, *args, **kwargs):
+        try:
+            _alg = identify_hasher(self.password)
+        except ValueError:
+            self.password = make_password(self.password)
+        # if not self.id and not self.staff and not self.admin:
+        #     self.password = make_password(self.password)
+        super().save(*args, **kwargs)
+
+
+
+
 
 
 
